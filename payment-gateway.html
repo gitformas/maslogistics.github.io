@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Payment · CheckoutPro</title>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #07090f;
+      --surface:   #0e1117;
+      --card:      #141820;
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(245,166,35,0.35);
+      --gold:      #f5a623;
+      --gold-dim:  #c47f0e;
+      --gold-glow: rgba(245,166,35,0.18);
+      --green:     #22d37a;
+      --green-glow:rgba(34,211,122,0.18);
+      --text:      #f0f2f8;
+      --muted:     #6b7280;
+      --subtle:    #9ca3af;
+      --danger:    #f87171;
+      --font-head: 'Clash Display', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --radius:    20px;
+      --radius-lg: 28px;
+      --shadow:    0 32px 64px rgba(0,0,0,0.6);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100svh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px 16px 60px;
+      overflow-x: hidden;
+    }
+
+    /* Animated background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 900px 600px at 80% 10%, rgba(245,166,35,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 500px at 10% 90%, rgba(34,211,122,0.05) 0%, transparent 55%),
+        radial-gradient(ellipse 400px 400px at 50% 50%, rgba(14,18,23,0.95) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── WRAPPER ─────────────────────────────────────── */
+    .checkout-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1020px;
+      margin-top: 20px;
+    }
+
+    /* ─── TOP BRAND BAR ───────────────────────────────── */
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding: 0 4px;
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo .logo-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      color: #000;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px var(--gold-glow);
+    }
+
+    .brand-logo .brand-name {
+      font-family: var(--font-head);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-logo .brand-name span { color: var(--gold); }
+
+    .brand-security {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+    }
+
+    .brand-security i { color: var(--green); font-size: 0.72rem; }
+
+    /* ─── MAIN CARD ───────────────────────────────────── */
+    .checkout-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+
+    /* ─── LEFT PANEL ──────────────────────────────────── */
+    .panel-left {
+      background: linear-gradient(160deg, #0d1016 0%, #0a0c12 100%);
+      padding: 40px 36px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-left::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .product-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245,166,35,0.1);
+      border: 1px solid rgba(245,166,35,0.25);
+      border-radius: 100px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      color: var(--gold);
+      width: fit-content;
+      font-weight: 500;
+    }
+
+    .product-title {
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-top: 6px;
+    }
+
+    .product-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.6;
+    }
+
+    /* Amount display */
+    .amount-display-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      position: relative;
+    }
+
+    .amount-label {
+      font-size: 0.73rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .currency-symbol {
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      color: var(--gold);
+      line-height: 1;
+      padding-bottom: 4px;
+    }
+
+    .amount-input {
+      font-family: var(--font-head);
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      outline: none;
+      width: 100%;
+      min-width: 0;
+      letter-spacing: -0.03em;
+      caret-color: var(--gold);
+    }
+
+    .amount-input::placeholder { color: rgba(240,242,248,0.2); }
+
+    .amount-edit-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .amount-edit-hint i { font-size: 0.65rem; }
+
+    /* Breakdown */
+    .breakdown {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      font-size: 0.875rem;
+    }
+
+    .breakdown-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+
+    .breakdown-row .label { color: var(--muted); }
+    .breakdown-row .value { font-weight: 500; }
+    .breakdown-row.total .label,
+    .breakdown-row.total .value { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+    .breakdown-row.total .value { color: var(--gold); }
+
+    .free-pill {
+      background: rgba(34,211,122,0.12);
+      color: var(--green);
+      border-radius: 100px;
+      padding: 2px 9px;
+      font-size: 0.72rem;
+      font-weight: 500;
+    }
+
+    /* Trust row */
+    .trust-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .trust-badge i { color: var(--green); font-size: 0.65rem; }
+
+    /* ─── RIGHT PANEL ─────────────────────────────────── */
+    .panel-right {
+      padding: 40px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .panel-right h2 {
+      font-family: var(--font-head);
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    /* ─── TAB SWITCHER ────────────────────────────────── */
+    .tab-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 11px 16px;
+      border-radius: calc(var(--radius) - 6px);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .tab-btn.active {
+      background: var(--gold);
+      color: #000;
+      box-shadow: 0 4px 20px var(--gold-glow);
+    }
+
+    .tab-btn:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.06); }
+
+    /* ─── FORM FIELDS ─────────────────────────────────── */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group label .req { color: var(--danger); }
+
+    .field-wrap {
+      position: relative;
+    }
+
+    .field-wrap i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .field-wrap input,
+    .field-wrap select {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      padding: 14px 16px 14px 42px;
+      outline: none;
+      transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .field-wrap select { padding-left: 42px; cursor: pointer; }
+    .field-wrap select option { background: var(--card); }
+
+    .field-wrap input::placeholder { color: rgba(107,114,128,0.8); }
+
+    .field-wrap input:focus,
+    .field-wrap select:focus {
+      border-color: rgba(245,166,35,0.5);
+      background: rgba(245,166,35,0.04);
+      box-shadow: 0 0 0 3px rgba(245,166,35,0.08);
+    }
+
+    .field-hint {
+      font-size: 0.73rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Paystack info box */
+    .paystack-info {
+      background: linear-gradient(135deg, rgba(245,166,35,0.06), rgba(34,211,122,0.04));
+      border: 1px solid rgba(245,166,35,0.2);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .paystack-info .icon-wrap {
+      width: 42px;
+      height: 42px;
+      background: rgba(245,166,35,0.12);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .paystack-info .pi-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+    }
+
+    .paystack-info .pi-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .paystack-info .pi-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .pi-badge {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 3px 10px;
+      font-size: 0.7rem;
+      color: var(--subtle);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pi-badge i { color: var(--green); font-size: 0.6rem; }
+
+    /* ─── PAY BUTTON ──────────────────────────────────── */
+    .pay-btn {
+      position: relative;
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border: none;
+      border-radius: 16px;
+      color: #000;
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      padding: 18px 24px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.3s;
+      box-shadow: 0 8px 28px var(--gold-glow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pay-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 36px rgba(245,166,35,0.35);
+    }
+
+    .pay-btn:active { transform: translateY(0); }
+
+    .pay-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent);
+      pointer-events: none;
+    }
+
+    .pay-btn .btn-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      position: relative;
+    }
+
+    .pay-btn .btn-amount {
+      background: rgba(0,0,0,0.18);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Loading spinner in btn */
+    .pay-btn .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .pay-btn.loading .spinner { display: block; }
+    .pay-btn.loading .btn-text { opacity: 0.6; }
+
+    /* ─── BANK TRANSFER METHOD ────────────────────────── */
+    #bank-method { display: none; }
+    #bank-method.active { display: block; }
+
+    .bank-details-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .bank-details-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .bank-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, rgba(34,211,122,0.15), rgba(34,211,122,0.05));
+      border: 1px solid rgba(34,211,122,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .bank-header-text .bank-name { font-weight: 600; font-size: 0.95rem; }
+    .bank-header-text .bank-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    .detail-row {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-row .dk { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .detail-row .dv { font-weight: 600; font-size: 0.95rem; }
+    .detail-row .dv.large { font-family: var(--font-mono); font-size: 1.3rem; letter-spacing: 0.1em; color: var(--green); }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 12px;
+      color: var(--subtle);
+      font-size: 0.78rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover { background: rgba(245,166,35,0.1); border-color: rgba(245,166,35,0.3); color: var(--gold); }
+    .copy-btn.copied { background: rgba(34,211,122,0.1); border-color: rgba(34,211,122,0.3); color: var(--green); }
+
+    .transfer-alert {
+      background: rgba(245,166,35,0.07);
+      border: 1px solid rgba(245,166,35,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 0.82rem;
+      color: #e4b549;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .transfer-alert i { margin-top: 2px; flex-shrink: 0; }
+
+    .confirm-btn {
+      width: 100%;
+      background: transparent;
+      border: 1.5px solid var(--green);
+      border-radius: 16px;
+      color: var(--green);
+      font-family: var(--font-head);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 17px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .confirm-btn:hover { background: rgba(34,211,122,0.08); box-shadow: 0 0 28px var(--green-glow); }
+
+    /* ─── METHOD CONTENT ──────────────────────────────── */
+    .method-content { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ─── SUCCESS MODAL ───────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-width: 420px;
+      width: 100%;
+      padding: 40px 36px;
+      text-align: center;
+      animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-box::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, var(--green-glow), transparent 70%);
+      pointer-events: none;
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, rgba(34,211,122,0.15), rgba(34,211,122,0.05));
+      border: 2px solid rgba(34,211,122,0.3);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 24px;
+      animation: successBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+    }
+
+    .modal-title {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .ref-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+
+    .ref-box .ref-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px; }
+    .ref-box .ref-value { font-family: var(--font-mono); font-size: 1.1rem; color: var(--gold); font-weight: 700; letter-spacing: 0.05em; }
+
+    .modal-done-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border: none;
+      border-radius: 14px;
+      color: #000;
+      font-family: var(--font-head);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    .modal-done-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(245,166,35,0.35); }
+
+    .modal-note {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    /* ─── CONFETTI ────────────────────────────────────── */
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confettiFall 1.8s ease-in forwards;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* ─── ANIMATIONS ──────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.88); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes successBounce {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes shimmer {
+      from { background-position: -200% center; }
+      to   { background-position: 200% center; }
+    }
+
+    /* ─── VALIDATION STATES ───────────────────────────── */
+    .field-wrap.error input,
+    .field-wrap.error select {
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 0 3px rgba(248,113,113,0.1) !important;
+    }
+
+    .field-error-msg {
+      font-size: 0.73rem;
+      color: var(--danger);
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .field-wrap.error ~ .field-error-msg { display: flex; }
+
+    /* ─── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      body { padding: 12px 12px 40px; }
+
+      .checkout-card {
+        grid-template-columns: 1fr;
+        border-radius: 22px;
+      }
+
+      .panel-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 28px 22px;
+        gap: 22px;
+      }
+
+      .panel-right {
+        padding: 28px 22px;
+        gap: 22px;
+      }
+
+      .amount-input { font-size: 2.2rem; }
+      .brand-bar { margin-bottom: 18px; }
+
+      .product-title { font-size: 1.3rem; }
+
+      .trust-row { gap: 12px; }
+
+      .modal-box { padding: 28px 22px; }
+    }
+
+    @media (max-width: 400px) {
+      .amount-input { font-size: 1.8rem; }
+      .brand-security { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── CONFETTI CONTAINER ─────────────────────────── -->
+  <div id="confetti-wrap"></div>
+
+  <div class="checkout-wrapper">
+
+    <!-- Brand Bar -->
+    <div class="brand-bar">
+      <div class="brand-logo">
+        <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+        <div class="brand-name">YOUR<span>BIZ</span></div>
+      </div>
+      <div class="brand-security">
+        <i class="fa-solid fa-circle-check"></i>
+        SSL Encrypted · 256-bit
+      </div>
+    </div>
+
+    <!-- Main Checkout Card -->
+    <div class="checkout-card">
+
+      <!-- ─ LEFT PANEL ─────────────────────────────── -->
+      <div class="panel-left">
+
+        <div>
+          <div class="product-badge">
+            <i class="fa-solid fa-tag"></i>
+            One-time Payment
+          </div>
+          <h1 class="product-title" id="product-name">Your Product / Service</h1>
+          <p class="product-desc" id="product-desc">Instant access · No hidden charges · Secure checkout</p>
+        </div>
+
+        <!-- Amount block -->
+        <div class="amount-display-block">
+          <div class="amount-label">Total Amount</div>
+          <div class="amount-row">
+            <span class="currency-symbol">₦</span>
+            <input
+              id="amount-input"
+              class="amount-input"
+              type="text"
+              inputmode="numeric"
+              value="15,000"
+              placeholder="0"
+              oninput="handleAmountInput(this)"
+              autocomplete="off"
+            />
+          </div>
+          <div class="amount-edit-hint">
+            <i class="fa-solid fa-pen-to-square"></i>
+            Click to edit amount · NGN Nigerian Naira
+          </div>
+        </div>
+
+        <!-- Breakdown -->
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span class="label">Subtotal</span>
+            <span class="value" id="subtotal-display">₦15,000</span>
+          </div>
+          <div class="breakdown-row">
+            <span class="label">Processing fee</span>
+            <span class="value"><span class="free-pill">FREE</span></span>
+          </div>
+          <div class="breakdown-row total">
+            <span class="label">Total due today</span>
+            <span class="value" id="total-display">₦15,000</span>
+          </div>
+        </div>
+
+        <!-- Trust -->
+        <div class="trust-row">
+          <div class="trust-badge"><i class="fa-solid fa-circle-check"></i> PCI DSS</div>
+          <div class="trust-badge"><i class="fa-solid fa-circle-check"></i> Paystack Secured</div>
+          <div class="trust-badge"><i class="fa-solid fa-circle-check"></i> 256-bit SSL</div>
+        </div>
+
+      </div>
+
+      <!-- ─ RIGHT PANEL ──────────────────────────────── -->
+      <div class="panel-right">
+
+        <h2>Complete your payment</h2>
+
+        <!-- Tab Switcher -->
+        <div class="tab-switcher" role="tablist">
+          <button class="tab-btn active" id="tab-card" onclick="switchTab('card')" role="tab" aria-selected="true">
+            <i class="fa-solid fa-credit-card"></i> Card / Paystack
+          </button>
+          <button class="tab-btn" id="tab-bank" onclick="switchTab('bank')" role="tab" aria-selected="false">
+            <i class="fa-solid fa-building-columns"></i> Bank Transfer
+          </button>
+        </div>
+
+        <!-- ── CARD METHOD ─────────────────────────── -->
+        <div id="card-method" class="method-content">
+
+          <!-- Email field -->
+          <div class="form-group">
+            <label>Email Address <span class="req">*</span></label>
+            <div class="field-wrap" id="email-wrap">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                id="customer-email"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+                oninput="clearError('email-wrap')"
+              />
+            </div>
+            <div class="field-error-msg"><i class="fa-solid fa-circle-xmark"></i> Please enter a valid email</div>
+            <span class="field-hint"><i class="fa-solid fa-info-circle"></i> Receipt will be sent here</span>
+          </div>
+
+          <!-- Paystack info -->
+          <div class="paystack-info">
+            <div class="icon-wrap">⚡</div>
+            <div>
+              <div class="pi-title">Pay instantly via Paystack</div>
+              <div class="pi-sub">Debit/credit cards, bank transfer, USSD, QR and more — all in one secure window.</div>
+              <div class="pi-badges">
+                <span class="pi-badge"><i class="fa-solid fa-check"></i> Cards</span>
+                <span class="pi-badge"><i class="fa-solid fa-check"></i> Bank Transfer</span>
+                <span class="pi-badge"><i class="fa-solid fa-check"></i> USSD</span>
+                <span class="pi-badge"><i class="fa-solid fa-check"></i> QR Code</span>
+                <span class="pi-badge"><i class="fa-solid fa-check"></i> Verve</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pay Button -->
+          <button class="pay-btn" id="paystack-btn" onclick="payWithPaystack()">
+            <span class="btn-left">
+              <i class="fa-solid fa-lock"></i>
+              <span class="btn-text">Pay Securely</span>
+              <span class="spinner"></span>
+            </span>
+            <span class="btn-amount">₦<span id="btn-amount-val">15,000</span></span>
+          </button>
+
+        </div>
+
+        <!-- ── BANK TRANSFER METHOD ─────────────────── -->
+        <div id="bank-method" class="method-content">
+
+          <div class="bank-details-card">
+            <div class="bank-details-header">
+              <div class="bank-icon"><i class="fa-solid fa-building-columns"></i></div>
+              <div class="bank-header-text">
+                <div class="bank-name">Direct Bank Transfer</div>
+                <div class="bank-sub">Transfer exactly the amount shown, then confirm below</div>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div>
+                <div class="dk">Bank Name</div>
+                <div class="dv" id="bank-name-val">ACCESS BANK PLC</div>
+              </div>
+              <button class="copy-btn" onclick="copyDetail('bank-name-val', this)">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+            </div>
+
+            <div class="detail-row">
+              <div>
+                <div class="dk">Account Name</div>
+                <div class="dv" id="acct-name-val">YOUR FULL NAME</div>
+              </div>
+              <button class="copy-btn" onclick="copyDetail('acct-name-val', this)">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+            </div>
+
+            <div class="detail-row">
+              <div>
+                <div class="dk">Account Number</div>
+                <div class="dv large" id="acct-num-val">0000000000</div>
+              </div>
+              <button class="copy-btn" onclick="copyDetail('acct-num-val', this)">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+            </div>
+
+            <div class="detail-row">
+              <div>
+                <div class="dk">Amount to Transfer</div>
+                <div class="dv large" id="transfer-amount-val" style="color:var(--gold)">₦15,000</div>
+              </div>
+              <button class="copy-btn" onclick="copyDetail('transfer-amount-val', this)">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="transfer-alert">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>After completing your transfer, send proof of payment to <strong>support@yourbiz.com</strong> or WhatsApp <strong>+234 000 000 0000</strong></span>
+          </div>
+
+          <button class="confirm-btn" onclick="showTransferSuccess()">
+            <i class="fa-solid fa-circle-check"></i>
+            I HAVE MADE THE TRANSFER
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.checkout-wrapper -->
+
+  <!-- ─── SUCCESS MODAL ──────────────────────────────── -->
+  <div class="modal-overlay" id="success-modal" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <div class="success-icon">✅</div>
+      <div class="modal-title">Payment Received!</div>
+      <div class="modal-subtitle" id="modal-message">
+        Your payment was processed successfully. Thank you for your business!
+      </div>
+
+      <div class="ref-box">
+        <div class="ref-label">Transaction Reference</div>
+        <div class="ref-value" id="transaction-ref">PAY-XXXXXXXXXX</div>
+      </div>
+
+      <button class="modal-done-btn" onclick="closeModal()">
+        Done · Return to Website
+      </button>
+
+      <p class="modal-note">
+        A confirmation email will be sent from Paystack.<br>
+        Keep your reference number for your records.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─── SCRIPTS ────────────────────────────────────── -->
+  <script>
+    /* ── CONFIG – change these ──────────────────────── */
+    const PAYSTACK_KEY = "pk_test_XXXXXXXXXXXXXXXXXXXXXXXX"; // ← replace with your key
+
+    /* ── State ───────────────────────────────────────── */
+    let rawAmount = 15000;
+
+    /* ── Amount formatting ───────────────────────────── */
+    function handleAmountInput(el) {
+      const digits = el.value.replace(/\D/g, '');
+      rawAmount = parseInt(digits) || 0;
+      el.value = rawAmount.toLocaleString('en-NG');
+
+      const formatted = '₦' + rawAmount.toLocaleString('en-NG');
+      document.getElementById('subtotal-display').textContent = formatted;
+      document.getElementById('total-display').textContent = formatted;
+      document.getElementById('btn-amount-val').textContent = rawAmount.toLocaleString('en-NG');
+      document.getElementById('transfer-amount-val').textContent = formatted;
+    }
+
+    /* Prevent caret jumping when formatting */
+    document.getElementById('amount-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && this.value.length > 0) {
+        e.preventDefault();
+        const digits = this.value.replace(/\D/g, '').slice(0, -1);
+        rawAmount = parseInt(digits) || 0;
+        this.value = rawAmount > 0 ? rawAmount.toLocaleString('en-NG') : '';
+        syncAmounts();
+      }
+    });
+
+    function syncAmounts() {
+      const formatted = '₦' + (rawAmount || 0).toLocaleString('en-NG');
+      document.getElementById('subtotal-display').textContent = formatted;
+      document.getElementById('total-display').textContent = formatted;
+      document.getElementById('btn-amount-val').textContent = (rawAmount || 0).toLocaleString('en-NG');
+      document.getElementById('transfer-amount-val').textContent = formatted;
+    }
+
+    /* ── Tab switching ───────────────────────────────── */
+    function switchTab(tab) {
+      const isCard = tab === 'card';
+
+      document.getElementById('tab-card').classList.toggle('active', isCard);
+      document.getElementById('tab-bank').classList.toggle('active', !isCard);
+
+      document.getElementById('card-method').style.display = isCard ? 'flex' : 'none';
+      document.getElementById('bank-method').style.display = isCard ? 'none' : 'flex';
+    }
+
+    /* ── Field validation helpers ───────────────────── */
+    function clearError(wrapId) {
+      document.getElementById(wrapId).classList.remove('error');
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    /* ── Paystack integration ────────────────────────── */
+    function payWithPaystack() {
+      const email = document.getElementById('customer-email').value.trim();
+      const btn   = document.getElementById('paystack-btn');
+
+      if (!email || !isValidEmail(email)) {
+        document.getElementById('email-wrap').classList.add('error');
+        document.getElementById('customer-email').focus();
+        return;
+      }
+
+      if (!rawAmount || rawAmount < 100) {
+        alert('Please enter a valid amount (minimum ₦100).');
+        document.getElementById('amount-input').focus();
+        return;
+      }
+
+      const reference = 'PAY-' + Date.now() + '-' + Math.floor(Math.random() * 99999);
+
+      try {
+        const handler = PaystackPop.setup({
+          key:      PAYSTACK_KEY,
+          email:    email,
+          amount:   rawAmount * 100, // kobo
+          currency: 'NGN',
+          ref:      reference,
+          metadata: { custom_fields: [{ display_name: 'Product', value: document.getElementById('product-name').textContent }] },
+          callback: function (response) {
+            btn.classList.remove('loading');
+            document.getElementById('transaction-ref').textContent = response.reference;
+            document.getElementById('modal-message').innerHTML =
+              `<strong>₦${rawAmount.toLocaleString('en-NG')}</strong> paid successfully via Paystack.<br>Thank you for your business! 🎉`;
+            openModal();
+          },
+          onClose: function () {
+            btn.classList.remove('loading');
+          }
+        });
+
+        btn.classList.add('loading');
+        handler.openIframe();
+      } catch (err) {
+        btn.classList.remove('loading');
+        alert('Payment popup could not open. Please check your Paystack public key.\n\n' + err.message);
+      }
+    }
+
+    /* ── Bank transfer confirm ───────────────────────── */
+    function showTransferSuccess() {
+      const ref = 'PAY-' + Date.now();
+      document.getElementById('transaction-ref').textContent = ref;
+      document.getElementById('modal-message').innerHTML =
+        `Your bank transfer of <strong>₦${rawAmount.toLocaleString('en-NG')}</strong> has been noted.<br>We will confirm and notify you shortly.`;
+      openModal();
+    }
+
+    /* ── Modal helpers ───────────────────────────────── */
+    function openModal() {
+      document.getElementById('success-modal').classList.add('open');
+      launchConfetti();
+    }
+
+    function closeModal() {
+      document.getElementById('success-modal').classList.remove('open');
+    }
+
+    /* Close on backdrop click */
+    document.getElementById('success-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
+
+    /* ── Copy to clipboard ───────────────────────────── */
+    function copyDetail(elId, btn) {
+      const text = document.getElementById(elId).textContent.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+        }, 2000);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+        }, 2000);
+      });
+    }
+
+    /* ── Confetti ────────────────────────────────────── */
+    function launchConfetti() {
+      const container = document.getElementById('confetti-wrap');
+      const colors = ['#f5a623','#22d37a','#f0f2f8','#60a5fa','#f472b6','#a78bfa'];
+      for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.top  = '-10px';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.width  = (6 + Math.random() * 8) + 'px';
+        piece.style.height = (6 + Math.random() * 8) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        piece.style.animationDuration = (1.2 + Math.random() * 1.5) + 's';
+        piece.style.animationDelay    = (Math.random() * 0.5) + 's';
+        container.appendChild(piece);
+        setTimeout(() => piece.remove(), 3500);
+      }
+    }
+
+    /* ── Init ────────────────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', () => {
+      // Show card method by default
+      document.getElementById('card-method').style.display = 'flex';
+      document.getElementById('bank-method').style.display = 'none';
+
+      // Set initial formatted amount
+      const input = document.getElementById('amount-input');
+      rawAmount = 15000;
+      input.value = rawAmount.toLocaleString('en-NG');
+      syncAmounts();
+
+      console.log('%c⚡ Payment Gateway Ready', 'color:#f5a623;font-size:14px;font-weight:bold');
+      console.log('→ Replace PAYSTACK_KEY with your real public key');
+    });
+  </script>
+</body>
+</html>
